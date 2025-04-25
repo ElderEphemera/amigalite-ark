@@ -62,18 +62,18 @@ void playerPhysics(Camera3D* camera, Vector3 oldPos, Model ship, Model ladder) {
 
   if (climbing) {
     camera->position = oldPos;
-    camera->position.y += 0.2f;
+    camera->position.y += 12*GetFrameTime();
   } else {
     collision = CheckCollisionModel((Ray){ player, movement }, ship);
-    if (collision.hit && collision.distance <= 1) {
-      Vector3 newPos = Vector3Add(oldPos, climbing ? Vector3Scale(camera->up, 2) : Vector3Reject(movement, collision.normal));
+    if (collision.hit && collision.distance <= 2) {
+      Vector3 newPos = Vector3Add(oldPos, Vector3Reject(movement, collision.normal));
       camera->target = Vector3Add(camera->target, Vector3Subtract(newPos, camera->position));
       camera->position = newPos;
 
       movement = Vector3Subtract(camera->position, oldPos);
-      collision = CheckCollisionModel((Ray){ player, Vector3ClampValue(movement, 1, 100) }, ship);
+      collision = CheckCollisionModel((Ray){ player, movement }, ship);
 
-      if (collision.hit && collision.distance <= 1) {
+      if (collision.hit && collision.distance <= 2) {
         camera->target = Vector3Add(camera->target, Vector3Subtract(oldPos, camera->position));
         camera->position = oldPos;
       }
@@ -81,7 +81,7 @@ void playerPhysics(Camera3D* camera, Vector3 oldPos, Model ship, Model ladder) {
 
     collision = CheckCollisionModel((Ray){ player, (Vector3){ 0, -1, 0 } }, ship);
     if (collision.hit && collision.distance >= 5 && !CheckCollisionBoxSphere(GetMeshBoundingBox(ladder.meshes[0]), Vector3Transform(Vector3Subtract(player, (Vector3){ 0, 4, 0 }), MatrixInvert(ladder.transform)), 20)) {
-      camera->position.y -= 0.5f;
+      camera->position.y -= 30*GetFrameTime();
     }
   }
 }
@@ -129,7 +129,7 @@ void randomizeUV(Model* model) {
     for (int j = 0; j < model->meshes[i].vertexCount*2; j++) {
       texcoords[j] = (float)GetRandomValue(0,255)/255;
     }
-    UpdateMeshBuffer(model->meshes[i], 1, texcoords, model->meshes[i].vertexCount*2*sizeof(float), 0);
+    UpdateMeshBuffer(model->meshes[i], SHADER_LOC_VERTEX_TEXCOORD01, texcoords, model->meshes[i].vertexCount*2*sizeof(float), 0);
     MemFree(texcoords);
   }
 }
@@ -144,6 +144,7 @@ int main(void)
   const int screenHeight = 900;
 
   InitWindow(screenWidth, screenHeight, "ark TODO");
+  InitAudioDevice();
 
   state st = STATE_POLE;
 
@@ -189,6 +190,9 @@ int main(void)
   exclamation.transform = MatrixRotate((Vector3){1,0,0}, PI);
   Vector3 exclamationPos = { 0 };
 
+  Model cd = LoadModel("assets/cd.glb");
+  bool cdCaught = false;
+
   Model waves = LoadModelFromMesh(GenMeshPlane(WAVE_SPAN, WAVE_SPAN, WAVE_PEAKS-1, WAVE_PEAKS-1));
   waves.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("assets/waves/1.jpg");
   int i = 0;
@@ -202,13 +206,27 @@ int main(void)
       waves.meshes[0].texcoords[i++] = flipZ ? 1-zPreflip : zPreflip;
     }
   }
-  UpdateMeshBuffer(waves.meshes[0], 1, waves.meshes[0].texcoords, waves.meshes[0].vertexCount*2*sizeof(float), 0);
+  UpdateMeshBuffer(waves.meshes[0], SHADER_LOC_VERTEX_TEXCOORD01, waves.meshes[0].texcoords, waves.meshes[0].vertexCount*2*sizeof(float), 0);
   waves.transform = MatrixTranslate(0, -13, 0);
 
+  Texture2D skyTexture = LoadTexture("assets/sky.png");
+  Model sky = LoadModelFromMesh(GenMeshCone(10, 10, 8));
+  //sky.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = skyTexture;
+  for (int i = 0; i < sky.meshes[0].vertexCount*3; i++) sky.meshes[0].normals[i] *= -1;
+  UpdateMeshBuffer(sky.meshes[0], SHADER_LOC_VERTEX_NORMAL, sky.meshes[0].normals, sky.meshes[0].vertexCount*3*sizeof(float), 0);
+
+  Music oceanSounds = LoadMusicStream("assets/ocean.mp3");
+  SetMusicVolume(oceanSounds, 2);
+  PlayMusicStream(oceanSounds);
+
+  Sound hookedSfx = LoadSound("assets/hooked.mp3");
+  SetSoundVolume(hookedSfx, 0.3f);
+  SetSoundPitch(hookedSfx, 1.5f);
+
   Camera camera = { 0 };
-  camera.position = (Vector3){ 0.0f, 2.0f, 0.0f };
-  camera.target = (Vector3){ 0.0f, 2.0f, 2.0f };
-  camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+  camera.position = (Vector3){ 0, 2, 0 };
+  camera.target = (Vector3){ 2, 2, 0 };
+  camera.up = (Vector3){ 0, 1, 0 };
   camera.fovy = 60.0f;
   camera.projection = CAMERA_PERSPECTIVE;
 
@@ -222,17 +240,19 @@ int main(void)
     // update
     //====================================================================================
 
+    UpdateMusicStream(oceanSounds);
+
     genWaveVertices(&noise, waves.meshes[0].vertices);
-    UpdateMeshBuffer(waves.meshes[0], 0, waves.meshes[0].vertices, waves.meshes[0].vertexCount*3*sizeof(float), 0);
+    UpdateMeshBuffer(waves.meshes[0], SHADER_LOC_VERTEX_POSITION, waves.meshes[0].vertices, waves.meshes[0].vertexCount*3*sizeof(float), 0);
 
     Vector3 oldPos = camera.position;
     updateCamera(&camera);
     playerPhysics(&camera, oldPos, ship, ladder);
 
     if (st == STATE_POLE && (IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) {
-      poleCastAngle += PI/80;
+      poleCastAngle += 0.75f*PI*GetFrameTime();
     } else {
-      poleCastAngle -= PI/10;
+      poleCastAngle -= 6*PI*GetFrameTime();
     }
     poleCastAngle = Clamp(poleCastAngle, 0, 2*PI/3);
 
@@ -270,43 +290,47 @@ int main(void)
       bobberVel = Vector3ClampValue(Vector3Add(bobberVel, (Vector3){ 0, -30*GetFrameTime(), 0 }), 0, 100000);
       bobberPos = Vector3Add(bobberPos, Vector3Scale(bobberVel, GetFrameTime()));
 
-      /*
-      RayCollision collision = CheckCollisionModel((Ray){ oldBobberPos, Vector3Subtract(bobberPos, oldBobberPos) }, waves);
-      if (collision.hit && collision.distance < 1) {
+      RayCollision collision = CheckCollisionModel((Ray){ oldBobberPos, (Vector3){ 0, -1, 0 } }, waves);
+      if (collision.hit && collision.distance < 0.1) {
         bobberPos = collision.point;
         st = STATE_CAST;
       } else if (bobberPos.y < -13) {
         st = STATE_CAST;
       }
-      */
-      if (bobberPos.y < waveHeight(&noise, bobberPos.x, bobberPos.y, GetTime()) - 13) st = STATE_CAST;
     }
 
     if (st == STATE_CAST || st == STATE_HOOKED) {
-      /*
-      Vector3 vertical = { 0, 5, 0 };
-      RayCollision collision = CheckCollisionModel((Ray){ Vector3Add(bobberPos, vertical), Vector3Subtract(bobberPos, vertical) }, waves);
-      if (collision.hit && collision.distance < 10) {
-        bobberPos.y = collision.point.y;
+      bobberPos.y = 0;
+      RayCollision collision = CheckCollisionModel((Ray){ bobberPos, (Vector3){ 0, -1, 0 } }, waves);
+      bobberPos.y = collision.point.y;
+
+      if (st == STATE_CAST && randomEvent(15)) {
+        st = STATE_HOOKED;
+        PlaySound(hookedSfx);
       }
-      */
-      bobberPos.y = waveHeight(&noise, bobberPos.x, bobberPos.y, GetTime()) - 13;
 
-      if (randomEvent(15)) st = STATE_HOOKED;
-
-      if (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) st = STATE_REELING;
+      if (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
+        cdCaught = st == STATE_HOOKED;
+        st = STATE_REELING;
+      }
     }
 
     if (st == STATE_HOOKED) {
       exclamationPos = bobberPos;
-      exclamationPos.y += 5;
+      exclamationPos.y += 6;
 
       if (randomEvent(3)) st = STATE_CAST;
     }
 
     if (st == STATE_REELING) {
       bobberPos = Vector3MoveTowards(bobberPos, bobberOnPolePos, 2);
-      if (Vector3Equals(bobberPos, bobberOnPolePos)) st = STATE_POLE;
+      if (Vector3Equals(bobberPos, bobberOnPolePos)) {
+        cdCaught = false;
+        st = STATE_POLE;
+      }
+      if (cdCaught) {
+        cd.transform = MatrixMultiply(MatrixMultiply(MatrixScale(0.005f, 0.005f, 0.005f), MatrixRotateY(atan2f(forward.x, forward.z))), MatrixTranslate(bobberPos.x, bobberPos.y-0.8f, bobberPos.z));
+      }
     }
 
     // drawing
@@ -318,22 +342,25 @@ int main(void)
       BeginMode3D(camera);
 
         DrawModel(waves, Vector3Zero(), 1, WHITE);
+        DrawModel(sky, Vector3Zero(), 1, RED);
         DrawModel(ship, Vector3Zero(), 1, WHITE);
         DrawModel(ladder, Vector3Zero(), 1, WHITE);
         DrawModel(pole, Vector3Zero(), 1, WHITE);
         DrawModel(bobber, bobberPos, 0.01f, RED);
         if (st != STATE_POLE) DrawLine3D(bobberPos, bobberOnPolePos, WHITE);
         if (st == STATE_HOOKED) DrawModel(exclamation, exclamationPos, 1, YELLOW);
+        if (cdCaught) DrawModel(cd, Vector3Zero(), 1, WHITE);
 
       EndMode3D();
 
-      //DrawFPS(10, 10);
+      DrawFPS(10, 10);
 
     EndDrawing();
   }
 
   // de-initialization
   //======================================================================================
+  // TODO
   CloseWindow();
 
   return 0;

@@ -5,11 +5,17 @@
     "reel.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL039LH.JPG",
     "line.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL013LH.JPG",
     "metal.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL043LH.JPG",
+    "sky.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL015LH.JPG",
+
     "font.ttf": "https://discmaster.textfiles.com/view/6472/Font%20Fun%20House%20(Wayzata%20Technology)%20(1992).iso/pc/pc/truetype/mazama/maza_tt/mattr___.ttf",
+
+    "ocean.mp3": "http://discmaster.textfiles.com/view/24107/PC%20Gamer%20Disc%207.33%20(October%202003).ISO/Software/Demos/SimsOnline/TSO/Disc%202/Data2.cab/TSOClient/sounddata/ambience/loops/ocean_lp.xa",
+    "hooked.mp3": "http://discmaster.textfiles.com/view/26950/3DW_149.iso/pc/DiscContents/resources/soundsnapsounds/Data/Soundsnap%20Dec%2011.zip/Soundsnap%20Dec%2011/Foley%20&%20FX09/Sound%20design%20multimedia%20accent%20notice%20chime%20mallets%2001_SFXBible_ss03657.wav",
 
     "pole.glb": "http://discmaster.textfiles.com/view/12759/Mania_09_CD2.iso/Gamezone1/Morrowind/Quests/FishingAcademy/fishing_academy.rar/Meshes/fishing_pole.NIF",
     "ship.glb": "https://discmaster.textfiles.com/view/2201/BUGCD1997_09.BIN/INTERNET/SPCEBLDR/DATA.Z/Ship.vcd",
     "bobber.glb": "http://discmaster.textfiles.com/view/22495/XENIATGM131.iso/FragZone/Files/Bid%20For%20Power%201.1/bfp1_1_tgm.exe/bfp0.pk3/models/weaphits/sphere_2.md3",
     "exclamation.glb": "http://discmaster.textfiles.com/view/12771/10000.zip/AOLDLs/3D%20MODELS_%20Items%20&%20Miscellaneous/DXF_%203D%20DXF%20_New%20York%20Fonts_/3D%20New%20York%20Fonts!.sit/3D%20New%20York%20Fonts!/Punctuation%20folder/exclamation_Model.dxf",
-    "ladder.glb": "http://discmaster.textfiles.com/view/22611/Hrac_70_2004-06_dvd.iso/dema/Soldner/soldnerbetademo_v2.exe/Main/soldner1.pak/Content_Art_3dObj_Meshes_Ladder_01.x"
+    "ladder.glb": "http://discmaster.textfiles.com/view/22611/Hrac_70_2004-06_dvd.iso/dema/Soldner/soldnerbetademo_v2.exe/Main/soldner1.pak/Content_Art_3dObj_Meshes_Ladder_01.x",
+    "cd.glb": "http://discmaster.textfiles.com/view/10646/Capture%20the%20Power%20of%20the%20Internet.iso/mac/MacFiles/MultimediaTools/ImageAnimators/3dmoviemk.sit/3DMovieMaker/Data/CD.3df"
 }
