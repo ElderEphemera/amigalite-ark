@@ -12,8 +12,9 @@
 #define WAVE_TEX_TILES 8
 
 #define UNLOCK_ALL 1
+#define SHOW_FPS 1
 
-typedef enum { MODE_FISHING, MODE_AWARD, MODE_JUKEBOX, MODE_CANVAS, MODE_PAINT } mode;
+typedef enum { MODE_INTRO, MODE_FISHING, MODE_AWARD, MODE_GOFISH, MODE_JUKEBOX, MODE_CANVAS, MODE_PAINT } mode;
 
 typedef enum { STATE_POLE, STATE_WINDING, STATE_CASTING, STATE_CAST, STATE_HOOKED, STATE_REELING } state;
 
@@ -22,18 +23,17 @@ bool randomEvent(float avgSeconds) {
 }
 
 float waveHeight(fnl_state* noise, float x, float z, float t) {
-  return 4*fnlGetNoise3D(noise, 2*x, 2*z, 30*t);
+  return 5*fnlGetNoise3D(noise, 2*x, 2*z, 30*t);
 }
 
-void genWaveVertices(fnl_state* noise, float* vertices)
-{
+void genWaveVertices(fnl_state* noise, float* vertices) {
   FNLfloat t = (FNLfloat)GetTime();
 
   int i = 0;
   for (int z = 0; z < WAVE_PEAKS; z++) {
-    float zPos = ((float)z/(WAVE_PEAKS-1) - 0.5f)*WAVE_SPAN;
+    float zPos = ((float)z/WAVE_PEAKS - 0.5f)*WAVE_SPAN;
     for (int x = 0; x < WAVE_PEAKS; x++) {
-      float xPos = ((float)x/(WAVE_PEAKS-1) - 0.5f)*WAVE_SPAN;
+      float xPos = ((float)x/WAVE_PEAKS - 0.5f)*WAVE_SPAN;
       vertices[i++] = xPos;
       vertices[i++] = waveHeight(noise, xPos, zPos, t);
       vertices[i++] = zPos;
@@ -115,40 +115,18 @@ void playerPhysics(Camera3D* camera, Vector3 oldPos, Model objects[], int object
 }
 
 void updateCamera(Camera* camera) {
-  float moveForward = 0, moveRight = 0;
-  float rotateYaw = 0, rotatePitch = 0;
-
   // mouse
+  float rotateSensitivity = 0.003f;
   Vector2 mousePositionDelta = GetMouseDelta();
-  rotateYaw -= mousePositionDelta.x;
-  rotatePitch -= mousePositionDelta.y;
+  CameraYaw(camera, -mousePositionDelta.x*rotateSensitivity, false);
+  CameraPitch(camera, -mousePositionDelta.y*rotateSensitivity, true, false, false);
 
   // keyboard
-  if (IsKeyDown(KEY_W)) moveForward += 1;
-  if (IsKeyDown(KEY_A)) moveRight -= 1;
-  if (IsKeyDown(KEY_S)) moveForward -= 1;
-  if (IsKeyDown(KEY_D)) moveRight += 1;
-
-  // gamepad
-  if (IsGamepadAvailable(0)) {
-    rotateYaw -= 20*GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_X);
-    rotatePitch -= 20*GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_Y);
-
-    float deadZone = 0.25f;
-    if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y) <= -deadZone) moveForward += 1;
-    else if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y) >= deadZone) moveForward -= 1;
-    if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) <= -deadZone) moveRight -= 1;
-    else if (GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X) >= deadZone) moveRight += 1;
-  }
-
-  // update
   float moveAmount = 15*GetFrameTime();
-  CameraMoveForward(camera, moveForward*moveAmount, true);
-  CameraMoveRight(camera, moveRight*moveAmount, true);
-
-  float rotateSensitivity = 0.003f;
-  CameraYaw(camera, rotateYaw*rotateSensitivity, false);
-  CameraPitch(camera, rotatePitch*rotateSensitivity, true, false, false);
+  if (IsKeyDown(KEY_W)) CameraMoveForward(camera, moveAmount, true);
+  if (IsKeyDown(KEY_A)) CameraMoveRight(camera, -moveAmount, true);
+  if (IsKeyDown(KEY_S)) CameraMoveForward(camera, -moveAmount, true);
+  if (IsKeyDown(KEY_D)) CameraMoveRight(camera, moveAmount, true);
 }
 
 void randomizeUV(Model model) {
@@ -162,17 +140,31 @@ void randomizeUV(Model model) {
   }
 }
 
-void addAward(const char* caught[], int* caughtCount, const char* award) {
+void addAward(const char* caught[], int* caughtCount, int* selected, const char* award) {
   int i = 0;
   while (i < *caughtCount) if (strcmp(award, caught[i++]) == 0) break;
   if (i == *caughtCount) {
     caught[i] = award;
-    (*caughtCount)++;
+    *selected = (*caughtCount)++;
   }
 }
 
-int main(void)
-{
+void drawIntro(Font font, const char* intro) {
+  ClearBackground(BEIGE);
+  Vector2 v = MeasureTextEx(font, intro, 32, 1);
+  DrawTextEx(font, intro, (Vector2){ 800-v.x/2, 45 }, 32, 1, BLACK);
+  Vector2 w = MeasureTextEx(font, "- BenchMaster", 32, 1);
+  DrawTextEx(font, "- BenchMaster", (Vector2){ 800+v.x/2-w.x, 55+v.y }, 32, 1, BLACK);
+}
+
+void drawTextCentered(Font font, const char *text, float y, float fontSize, float spacing, Color tint) {
+  float x = 800-MeasureTextEx(font, text, fontSize, spacing).x/2;
+  DrawTextEx(font, text, (Vector2){ x, y }, fontSize, spacing, tint);
+}
+
+int main(void) {
+  SetTraceLogLevel(LOG_WARNING);
+
   // initialization
   //======================================================================================
   const int screenWidth = 1600;
@@ -181,7 +173,21 @@ int main(void)
   InitWindow(screenWidth, screenHeight, "An Ark For The Amigalites");
   InitAudioDevice();
 
-  mode mode = MODE_FISHING;
+  Font font = LoadFontEx("assets/font.ttf", 100, NULL, 95);
+  int introSize;
+  char* intro = LoadFileData("assets/intro.txt", &introSize);
+  for (int i = 0; i < introSize-1; i++) {
+    if (intro[i] == '\n' && intro[i+1] == '\n') intro[i++] = ' ';
+  }
+  intro[introSize-1] = '\0';
+
+  BeginDrawing();
+    drawIntro(font, intro);
+    Vector2 v = MeasureTextEx(font, "Loading...", 40, 1);
+    DrawTextEx(font, "Loading...", (Vector2){ 1590-v.x, 10 }, 40, 1, BLACK);
+  EndDrawing();
+
+  mode mode = MODE_INTRO;
   state state = STATE_POLE;
 
   // noise
@@ -237,6 +243,7 @@ int main(void)
   paint.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = LoadTextureFromImage(paintImg);
   Image paintImgModified = paintImg;
   Image paintSticker;
+  Image paintStickerScaled;
   Rectangle paintStickerRect = { 0 };
   float paintStickerScale = 1;
 
@@ -257,6 +264,7 @@ int main(void)
   enum { allStickerCount = sizeof(allStickers)/sizeof(char*) };
   const char* caughtStickers[allStickerCount] = { 0 };
   int caughtStickerCount = 0;
+  int stickerSelected = 0;
   #if UNLOCK_ALL
   for (int i = 0; i < allStickerCount; i++) caughtStickers[i] = allStickers[i];
   caughtStickerCount = allStickerCount;
@@ -292,35 +300,58 @@ int main(void)
   bool cdCaught = false;
 
   Model waves = LoadModelFromMesh(GenMeshPlane(WAVE_SPAN, WAVE_SPAN, WAVE_PEAKS-1, WAVE_PEAKS-1));
-  waves.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("assets/waves/1.jpg");
-  for (int i = 0, z = 0; z < WAVE_PEAKS; z++) {
-    bool flipZ = z/(WAVE_PEAKS/WAVE_TEX_TILES)%2;
+  waves.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("assets/waves.jpg");
+  int i = 0;
+  float ztex = 0;
+  bool zdir = true;
+  for (int z = 0; z < WAVE_PEAKS; z++) {
+    float xtex = 0;
+    bool xdir = true;
     for (int x = 0; x < WAVE_PEAKS; x++) {
-      bool flipX = x/(WAVE_PEAKS/WAVE_TEX_TILES)%2;
-      float xPreflip = fmodf(waves.meshes[0].texcoords[i]*WAVE_TEX_TILES, 1);
-      waves.meshes[0].texcoords[i++] = flipX ? 1-xPreflip : xPreflip;
-      float zPreflip = fmodf(waves.meshes[0].texcoords[i]*WAVE_TEX_TILES, 1);
-      waves.meshes[0].texcoords[i++] = flipZ ? 1-zPreflip : zPreflip;
+      waves.meshes[0].texcoords[i++] = xtex;
+      waves.meshes[0].texcoords[i++] = ztex;
+      if (FloatEquals(xtex, 0) || FloatEquals(xtex, 1)) xdir = !xdir;
+      xtex += (xdir?-1:1)*(float)WAVE_TEX_TILES/WAVE_PEAKS;
     }
+    if (FloatEquals(ztex, 0) || FloatEquals(ztex, 1)) zdir = !zdir;
+    ztex += (zdir?-1:1)*(float)WAVE_TEX_TILES/WAVE_PEAKS;
   }
   UpdateMeshBuffer(waves.meshes[0], SHADER_LOC_VERTEX_TEXCOORD01, waves.meshes[0].texcoords, waves.meshes[0].vertexCount*2*sizeof(float), 0);
   waves.transform = MatrixTranslate(0, -13, 0);
 
   Texture2D skyTexture = LoadTexture("assets/sky.jpg");
-  Model sky = LoadModelFromMesh(GenMeshSphere(WAVE_SPAN/2, 64, 64));
+  Model sky = LoadModelFromMesh(GenMeshSphere((float)WAVE_SPAN/2, 64, 64));
   sky.transform = MatrixTranslate(0, -200, 0);
   sky.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = skyTexture;
 
   Model collisionObjects[4] = { ship, jukebox, easel, canvas };
   int collisionObjectCount = sizeof(collisionObjects)/sizeof(Model);
 
-  Font font = LoadFont("assets/font.ttf");
+  Texture2D keyW = LoadTexture("assets/controls/key_w.gif");
+  Texture2D keyA = LoadTexture("assets/controls/key_a.gif");
+  Texture2D keyS = LoadTexture("assets/controls/key_s.gif");
+  Texture2D keyD = LoadTexture("assets/controls/key_d.gif");
+  Texture2D keyQ = LoadTexture("assets/controls/key_q.gif");
+  Texture2D keyE = LoadTexture("assets/controls/key_e.gif");
+  Texture2D keyH = LoadTexture("assets/controls/key_h.gif");
+  Texture2D keySpace = LoadTexture("assets/controls/key_space.gif");
+  Texture2D keyEnter = LoadTexture("assets/controls/key_enter.gif");
+  Texture2D keyUp = LoadTexture("assets/controls/key_up.gif");
+  Texture2D keyDown = LoadTexture("assets/controls/key_down.gif");
+  Texture2D mouse0 = LoadTexture("assets/controls/mouse_0.png");
+  Texture2D mouse1 = LoadTexture("assets/controls/mouse_1.png");
+  Texture2D mouse2 = LoadTexture("assets/controls/mouse_2.png");
+  bool showHelp = true;
+  bool interactable = false;
+
   const char* award;
   int awardIndex;
 
+  const char* goFishFor;
+
   const char** menuItems;
   int menuItemCount = 0;
-  int menuSelected = 0;
+  int* menuSelected;
 
   Music oceanSounds = LoadMusicStream("assets/ocean.mp3");
   SetMusicVolume(oceanSounds, 2);
@@ -351,6 +382,7 @@ int main(void)
   enum { allSongCount = sizeof(allSongs)/sizeof(char*) };
   const char* caughtSongs[allSongCount] = { 0 };
   int caughtSongCount = 0;
+  int songSelected = 0;
   #if UNLOCK_ALL
   for (int i = 0; i < allSongCount; i++) caughtSongs[i] = allSongs[i];
   caughtSongCount = allSongCount;
@@ -363,9 +395,9 @@ int main(void)
   camera.fovy = 60.0f;
   camera.projection = CAMERA_PERSPECTIVE;
 
-  DisableCursor();
-
   SetTargetFPS(60);
+
+  DisableCursor();
 
   // main loop
   //======================================================================================
@@ -380,40 +412,55 @@ int main(void)
     genWaveVertices(&noise, waves.meshes[0].vertices);
     UpdateMeshBuffer(waves.meshes[0], SHADER_LOC_VERTEX_POSITION, waves.meshes[0].vertices, waves.meshes[0].vertexCount*3*sizeof(float), 0);
 
+    if (IsKeyPressed(KEY_H)) showHelp = !showHelp;
+
     switch (mode) {
 
+    case MODE_INTRO:
     case MODE_AWARD:
-      if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    case MODE_GOFISH:
+      if (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         mode = MODE_FISHING;
       }
       break;
 
     case MODE_JUKEBOX:
     case MODE_CANVAS:
+      /*
+      if (mode == MODE_JUKEBOX) {
+        camera.position = (Vector3){ 9.651401f, 2.000000f, 13.026970f };
+        camera.target = (Vector3){ 10.879786f, 1.585038f, 11.504169f };
+      } else { // mode == MODE_CANVAS
+        camera.position = (Vector3){ -13.245653f, 2.000000f, -0.788615f };
+        camera.target = (Vector3){ -15.243155f, 1.900042f, -0.787433f };
+      }
+      */
+
       if (IsKeyPressed(KEY_Q)) {
         mode = MODE_FISHING;
         break;
       }
 
-      if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) menuSelected++;
-      if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) menuSelected--;
-      menuSelected %= menuItemCount;
+      if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) (*menuSelected)++;
+      if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) (*menuSelected)--;
+      *menuSelected += menuItemCount;
+      *menuSelected %= menuItemCount;
 
       if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
         if (mode == MODE_JUKEBOX) {
           UnloadMusicStream(music);
           char file[100] = "assets/songs/";
-          strncat(file, menuItems[menuSelected], 87);
+          strncat(file, menuItems[*menuSelected], 87);
           music = LoadMusicStream(file);
           music.looping = false;
           PlayMusicStream(music);
           mode = MODE_FISHING;
         } else /* mode == MODE_CANVAS */ {
           char file[100] = "assets/stickers/";
-          strncat(file, menuItems[menuSelected], 84);
+          strncat(file, menuItems[*menuSelected], 84);
           paintSticker = LoadImage(file);
           ImageRotateCCW(&paintSticker);
-          paintImgModified = paintImg;
+          paintImgModified = ImageCopy(paintImg);
           EnableCursor();
           mode = MODE_PAINT;
         }
@@ -429,8 +476,10 @@ int main(void)
         break;
       }
 
+      Rectangle oldRect = paintStickerRect;
+
       paintStickerScale *= 1+GetMouseWheelMove()/4;
-      if (paintStickerScale <= 0) paintStickerScale = 0.1f;
+      paintStickerScale = Clamp(paintStickerScale, 0.1f, 10);
       paintStickerRect.width = 0.1f*paintStickerScale*paintImg.width;
       paintStickerRect.height = 0.1f*paintStickerScale*((float)paintSticker.height/paintSticker.width)*paintImg.height;
 
@@ -441,12 +490,31 @@ int main(void)
         paintStickerRect.y = paintImg.height*(p.z+0.5f) - paintStickerRect.height/2;
       }
 
-      paintImgModified = ImageCopy(paintImg);
-      ImageDraw(&paintImgModified, paintSticker, (Rectangle){ 0, 0, paintSticker.width, paintSticker.height }, paintStickerRect, WHITE);
-      UpdateTexture(paint.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture, paintImgModified.data);
+      if (
+        !FloatEquals(paintStickerRect.width, paintStickerScaled.width) ||
+        !FloatEquals(paintStickerRect.height, paintStickerScaled.height)
+      ) {
+        if (IsImageValid(paintStickerScaled)) UnloadImage(paintStickerScaled);
+        paintStickerScaled = ImageCopy(paintSticker);
+        ImageResizeNN(&paintStickerScaled, paintStickerRect.width, paintStickerRect.height);
+      }
 
-      if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        paintImg = paintImgModified;
+      if (
+        !FloatEquals(paintStickerRect.x, oldRect.x) ||
+        !FloatEquals(paintStickerRect.y, oldRect.y) ||
+        !FloatEquals(paintStickerRect.width, oldRect.width) ||
+        !FloatEquals(paintStickerRect.height, oldRect.height)
+      ) {
+        UnloadImage(paintImgModified);
+        paintImgModified = ImageCopy(paintImg);
+        ImageDraw(&paintImgModified, paintStickerScaled, (Rectangle){ 0, 0, paintStickerScaled.width, paintStickerScaled.height }, paintStickerRect, WHITE);
+        UpdateTexture(paint.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture, paintImgModified.data);
+      }
+
+      if (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        UnloadImage(paintImg);
+        paintImg = ImageCopy(paintImgModified);
+        UnloadImage(paintImgModified);
         DisableCursor();
         mode = MODE_FISHING;
       }
@@ -454,46 +522,57 @@ int main(void)
       break;
 
     case MODE_FISHING:
-      {
-        Vector3 oldPos = camera.position;
-        updateCamera(&camera);
-        playerPhysics(&camera, oldPos, collisionObjects, collisionObjectCount, ladder);
-      }
+      ;Vector3 oldPos = camera.position;
+      updateCamera(&camera);
+      playerPhysics(&camera, oldPos, collisionObjects, collisionObjectCount, ladder);
 
-      if (IsKeyPressed(KEY_E)) {
-        Vector3 look = Vector3Subtract(camera.target, camera.position);
-        RayCollision collision = GetRayCollisionModel((Ray){ camera.position, look }, jukebox);
-        if (collision.hit && collision.distance < 5 && caughtSongCount >= 1) {
+      Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+
+      collision = GetRayCollisionModel((Ray){ camera.position, forward }, jukebox);
+      bool jukeboxInteractable = collision.hit && collision.distance < 8;
+      if (jukeboxInteractable && IsKeyPressed(KEY_E)) {
+        interactable = false;
+        if (caughtSongCount >= 1) {
           menuItems = caughtSongs;
           menuItemCount = caughtSongCount;
-          menuSelected = caughtSongCount-1;
+          menuSelected = &songSelected;
           mode = MODE_JUKEBOX;
-          break;
+        } else {
+          goFishFor = "Songs";
+          mode = MODE_GOFISH;
         }
-
-        look = Vector3Subtract(camera.target, camera.position);
-        collision = GetRayCollisionModel((Ray){ camera.position, look }, canvas);
-        if (collision.hit && collision.distance < 5 && caughtStickerCount >= 1) {
-          menuItems = caughtStickers;
-          menuItemCount = caughtStickerCount;
-          menuSelected = caughtStickerCount-1;
-          mode = MODE_CANVAS;
-          break;
-        }
+        break;
       }
 
-      if (state == STATE_POLE && (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) {
+      collision = GetRayCollisionModel((Ray){ camera.position, forward }, canvas);
+      bool canvasInteractable = collision.hit && collision.distance < 8;
+      if (canvasInteractable && IsKeyPressed(KEY_E)) {
+        interactable = false;
+        if (caughtStickerCount >= 1) {
+          menuItems = caughtStickers;
+          menuItemCount = caughtStickerCount;
+          menuSelected = &stickerSelected;
+          mode = MODE_CANVAS;
+        } else {
+          goFishFor = "Stickers";
+          mode = MODE_GOFISH;
+        }
+        break;
+      }
+
+      interactable = jukeboxInteractable || canvasInteractable;
+
+      if (state == STATE_POLE && (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
         state = STATE_WINDING;
       }
 
-      if (state == STATE_WINDING && (IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsGamepadButtonDown(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) {
+      if (state == STATE_WINDING && (IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_BUTTON_LEFT))) {
         poleCastAngle += 0.75f*PI*GetFrameTime();
       } else {
         poleCastAngle -= 6*PI*GetFrameTime();
       }
       poleCastAngle = Clamp(poleCastAngle, 0, 2*PI/3);
 
-      Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
       Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, camera.up));
       Matrix matScale = MatrixScale(0.6f, 0.4f, 0.4f);
       Matrix matRotation = MatrixMultiply(
@@ -517,7 +596,7 @@ int main(void)
         pole.materials[4].maps[MATERIAL_MAP_DIFFUSE].color = BLANK;
       }
 
-      if (state == STATE_WINDING && (IsKeyReleased(KEY_SPACE) || IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsGamepadButtonReleased(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN))) {
+      if (state == STATE_WINDING && (IsKeyReleased(KEY_SPACE) || IsMouseButtonReleased(MOUSE_BUTTON_LEFT))) {
         if (poleCastAngle > PI/8) {
           bobberVel = Vector3Scale(forward, 30*poleCastAngle);
           state = STATE_CASTING;
@@ -550,7 +629,7 @@ int main(void)
           PlayMusicStream(hookedSfx);
         }
 
-        if (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN)) {
+        if (IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
           cdCaught = state == STATE_HOOKED;
           state = STATE_REELING;
         }
@@ -560,7 +639,7 @@ int main(void)
         exclamationPos = bobberPos;
         exclamationPos.y += 6;
 
-        if (randomEvent(3)) state = STATE_CAST;
+        if (randomEvent(4)) state = STATE_CAST;
       }
 
       if (state == STATE_REELING) {
@@ -570,10 +649,10 @@ int main(void)
             int rand = GetRandomValue(0, allSongCount+allStickerCount-1);
             if (rand < allSongCount) {
               award = allSongs[rand];
-              addAward(caughtSongs, &caughtSongCount, award);
+              addAward(caughtSongs, &caughtSongCount, &songSelected, award);
             } else {
               award = allStickers[rand-allSongCount];
-              addAward(caughtStickers, &caughtStickerCount, award);
+              addAward(caughtStickers, &caughtStickerCount, &stickerSelected, award);
             }
             mode = MODE_AWARD;
           }
@@ -592,53 +671,124 @@ int main(void)
     //====================================================================================
     BeginDrawing();
 
-      ClearBackground(SKYBLUE);
+      if (mode == MODE_INTRO) {
+        drawIntro(font, intro);
+        Vector2 v = MeasureTextEx(font, "Press Space To Continue", 40, 1);
+        DrawTextEx(font, "Press Space To Continue", (Vector2){ 1590-v.x, 10 }, 40, 1, BLACK);
+      } else {
+        ClearBackground(BLACK);
 
-      BeginMode3D(camera);
+        BeginMode3D(camera);
 
-        rlDisableBackfaceCulling();
-          DrawModel(sky, camera.position, 1, WHITE);
-          DrawModel(canvas, Vector3Zero(), 1, WHITE);
-        rlEnableBackfaceCulling();
-        DrawModel(waves, Vector3Zero(), 1, WHITE);
+          rlDisableBackfaceCulling();
+            DrawModel(sky, camera.position, 1, WHITE);
+            DrawModel(canvas, Vector3Zero(), 1, WHITE);
+          rlEnableBackfaceCulling();
 
-        DrawModel(ship, Vector3Zero(), 1, WHITE);
-        DrawModel(ladder, Vector3Zero(), 1, WHITE);
-        DrawModel(jukebox, Vector3Zero(), 1, WHITE);
-        DrawModel(easel, Vector3Zero(), 1, WHITE);
-        DrawModel(paint, Vector3Zero(), 1, WHITE);
+          DrawModel(waves, Vector3Zero(), 1, WHITE);
 
-        if (mode == MODE_FISHING || mode == MODE_AWARD) {
-          DrawModel(pole, Vector3Zero(), 1, WHITE);
-          DrawModel(bobber, bobberPos, 0.01f, RED);
-          if (state != STATE_POLE && state != STATE_WINDING)
-            DrawLine3D(bobberPos, bobberOnPolePos, WHITE);
-          if (state == STATE_HOOKED) DrawModel(exclamation, exclamationPos, 1, WHITE);
-          if (cdCaught) DrawModel(cd, Vector3Zero(), 1, WHITE);
-        }
+          DrawModel(ship, Vector3Zero(), 1, WHITE);
+          DrawModel(ladder, Vector3Zero(), 1, WHITE);
+          DrawModel(jukebox, Vector3Zero(), 1, WHITE);
+          DrawModel(easel, Vector3Zero(), 1, WHITE);
+          DrawModel(paint, Vector3Zero(), 1, WHITE);
 
-      EndMode3D();
+          if (mode == MODE_FISHING || mode == MODE_AWARD) {
+            DrawModel(pole, Vector3Zero(), 1, WHITE);
+            DrawModel(bobber, bobberPos, 0.01f, RED);
+            if (state != STATE_POLE && state != STATE_WINDING)
+              DrawLine3D(bobberPos, bobberOnPolePos, WHITE);
+            if (state == STATE_HOOKED) DrawModel(exclamation, exclamationPos, 1, WHITE);
+            if (cdCaught) DrawModel(cd, Vector3Zero(), 1, WHITE);
+          }
 
-      if (mode == MODE_AWARD) {
-        DrawTextEx(font, "You Caught:", (Vector2){ 100, 200 }, 100, 10, GREEN);
-        DrawTextEx(font, award, (Vector2){ 100, 300 }, 100, 10, GREEN);
-        DrawTextEx(font, "Wow!", (Vector2){ 100, 400 }, 100, 10, GREEN);
+        EndMode3D();
       }
 
-      if (mode == MODE_JUKEBOX || mode == MODE_CANVAS) {
-        for (int i = 0; i < menuItemCount; i++) {
-          DrawTextEx(font, menuItems[i], (Vector2){ 10, 50*i+60 }, 50, 5, i == menuSelected ? GREEN : RED);
+      switch (mode) {
+      case MODE_AWARD:
+        DrawRectangle(450, 350, 700, 200, BEIGE);
+        drawTextCentered(font, "You Caught:", 370, 50, 5, BLACK);
+        drawTextCentered(font, award, 425, 50, 5, BLACK);
+        drawTextCentered(font, "Wow!", 480, 50, 5, BLACK);
+        break;
+
+      case MODE_GOFISH:
+        DrawRectangle(550, 350, 500, 200, BEIGE);
+        drawTextCentered(font, "You Don't Have Any", 370, 50, 5, BLACK);
+        drawTextCentered(font, goFishFor, 425, 50, 5, BLACK);
+        drawTextCentered(font, "Go Fish!", 480, 50, 5, BLACK);
+        break;
+
+      case MODE_JUKEBOX:
+      case MODE_CANVAS:
+        DrawRectangle(400, 50, 800, 800, BEIGE);
+        int start = Clamp(*menuSelected-6, 0, Clamp(menuItemCount-13, 0, menuItemCount));
+        int end = Clamp(start+13, 0, menuItemCount);
+        for (int y = 60, i = start; i < end; y+=55, i++) {
+          bool ellipses = i+1 == end && end != menuItemCount || i == start && start != 0;
+          const char* item = ellipses ? "..." : menuItems[i];
+          drawTextCentered(font, item, y, 50, 5, i == *menuSelected ? DARKPURPLE : BLACK);
+        }
+        break;
+      }
+
+      if (showHelp) {
+        switch (mode) {
+
+        case MODE_FISHING:
+          if (interactable)
+          DrawTextureEx(keyE    , (Vector2){ 1600-10-28         , 10+32+32+42+32 }, 0, 2, WHITE);
+          DrawTextureEx(keyW    , (Vector2){ 1600-10-30-32-32   , 10             }, 0, 2, WHITE);
+          DrawTextureEx(keyA    , (Vector2){ 1600-10-30-32-32-32, 10+32          }, 0, 2, WHITE);
+          DrawTextureEx(keyS    , (Vector2){ 1600-10-30-32-32   , 10+32          }, 0, 2, WHITE);
+          DrawTextureEx(keyD    , (Vector2){ 1600-10-30-32      , 10+32          }, 0, 2, WHITE);
+          DrawTextureEx(mouse0  , (Vector2){ 1600-10-30         , 10+12          }, 0, 2, WHITE);
+          DrawTextureEx(keySpace, (Vector2){ 1600-10-30-32-32+6 , 10+32+32+4     }, 0, 2, WHITE);
+          DrawTextureEx(mouse1  , (Vector2){ 1600-10-30         , 10+32+32       }, 0, 2, WHITE);
+          DrawTextureEx(keyH    , (Vector2){ 1600-10-28         , 10+32+32+42    }, 0, 2, WHITE);
+          break;
+
+        case MODE_AWARD:
+        case MODE_GOFISH:
+          DrawTextureEx(keySpace, (Vector2){ 1600-10-30-32-32+6, 10+4  }, 0, 2, WHITE);
+          DrawTextureEx(mouse1  , (Vector2){ 1600-10-30        , 10    }, 0, 2, WHITE);
+          DrawTextureEx(keyH    , (Vector2){ 1600-10-28        , 10+52 }, 0, 2, WHITE);
+          break;
+
+        case MODE_JUKEBOX:
+        case MODE_CANVAS:
+          DrawTextureEx(keyW    , (Vector2){ 1600-10-72-32-32, 10          }, 0, 2, WHITE);
+          DrawTextureEx(keyA    , (Vector2){ 1600-10-72-32   , 10          }, 0, 2, WHITE);
+          DrawTextureEx(keySpace, (Vector2){ 1600-10-54      , 10          }, 0, 2, WHITE);
+          DrawTextureEx(keyUp   , (Vector2){ 1600-10-72-32-32, 10+32       }, 0, 2, WHITE);
+          DrawTextureEx(keyDown , (Vector2){ 1600-10-72-32   , 10+32       }, 0, 2, WHITE);
+          DrawTextureEx(keyEnter, (Vector2){ 1600-10-72      , 10+32       }, 0, 2, WHITE);
+          DrawTextureEx(keyQ    , (Vector2){ 1600-10-30      , 10+32+32    }, 0, 2, WHITE);
+          DrawTextureEx(keyH    , (Vector2){ 1600-10-28      , 10+32+32+32 }, 0, 2, WHITE);
+          break;
+
+        case MODE_PAINT:
+          DrawTextureEx(mouse0  , (Vector2){ 1600-10-30-30      , 10          }, 0, 2, WHITE);
+          DrawTextureEx(mouse2  , (Vector2){ 1600-10-30         , 10          }, 0, 2, WHITE);
+          DrawTextureEx(keySpace, (Vector2){ 1600-10-30-32-32+6 , 10+42       }, 0, 2, WHITE);
+          DrawTextureEx(mouse1  , (Vector2){ 1600-10-30         , 10+42       }, 0, 2, WHITE);
+          DrawTextureEx(keyQ    , (Vector2){ 1600-10-30         , 10+42+42    }, 0, 2, WHITE);
+          DrawTextureEx(keyH    , (Vector2){ 1600-10-28         , 10+42+42+32 }, 0, 2, WHITE);
+          break;
+
         }
       }
 
+      #if SHOW_FPS
       DrawFPS(10, 10);
+      #endif
 
     EndDrawing();
   }
 
   // de-initialization
   //======================================================================================
-  // TODO
   CloseWindow();
 
   return 0;

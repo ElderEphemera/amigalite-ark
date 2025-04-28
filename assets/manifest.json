@@ -1,14 +1,29 @@
 {
-    "waves/1.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL048LH.JPG",
+    "waves.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL048LH.JPG",
     "wood.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL092LH.JPG",
     "sail.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL076LH.JPG",
     "reel.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL039LH.JPG",
     "line.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL013LH.JPG",
     "metal.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL043LH.JPG",
     "sky.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL015LH.JPG",
-    "exclamation.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL078LH.JPG"
+    "exclamation.jpg": "http://discmaster.textfiles.com/view/2293/Artville%20-%20Calligraphic%20Backgrounds.iso/mac/Images/LrgCnvs/LrgHiRes/CAL078LH.JPG",
 
-    "font.ttf": "https://discmaster.textfiles.com/view/6472/Font%20Fun%20House%20(Wayzata%20Technology)%20(1992).iso/pc/pc/truetype/mazama/maza_tt/mattr___.ttf",
+    "controls/key_w.gif": "https://discmaster.textfiles.com/view/29933/ibm3170-3179/ibm3170.tar/ibm3170/RS-AGEM1.ZIP/ARTGEM1.RAR/RLV_AG10.EXE/1053/RCDATA/171/images/icons/key_w.gif",
+    "controls/key_a.gif": "https://discmaster.textfiles.com/view/29933/ibm3170-3179/ibm3170.tar/ibm3170/RS-AGEM1.ZIP/ARTGEM1.RAR/RLV_AG10.EXE/1053/RCDATA/171/images/icons/key_a.gif",
+    "controls/key_s.gif": "https://discmaster.textfiles.com/view/29933/ibm3170-3179/ibm3170.tar/ibm3170/RS-AGEM1.ZIP/ARTGEM1.RAR/RLV_AG10.EXE/1053/RCDATA/171/images/icons/key_s.gif",
+    "controls/key_d.gif": "https://discmaster.textfiles.com/view/29933/ibm3170-3179/ibm3170.tar/ibm3170/RS-AGEM1.ZIP/ARTGEM1.RAR/RLV_AG10.EXE/1053/RCDATA/171/images/icons/key_d.gif",
+    "controls/key_q.gif": "https://discmaster.textfiles.com/view/23146/chip-cd_2002_09.zip/09/Programy%20graficzne/ArtGem%201.3/rlv_ag13.exe/%7Bapp%7D/Help/images/icons/KEY_Q.GIF",
+    "controls/key_e.gif": "https://discmaster.textfiles.com/view/23146/chip-cd_2002_09.zip/09/Programy%20graficzne/ArtGem%201.3/rlv_ag13.exe/%7Bapp%7D/Help/images/icons/KEY_E.GIF",
+    "controls/key_h.gif": "https://discmaster.textfiles.com/view/23146/chip-cd_2002_09.zip/09/Programy%20graficzne/ArtGem%201.3/rlv_ag13.exe/%7Bapp%7D/Help/images/icons/KEY_H.GIF",
+    "controls/key_space.gif": "https://discmaster.textfiles.com/view/29933/ibm3170-3179/ibm3170.tar/ibm3170/RS-AGEM1.ZIP/ARTGEM1.RAR/RLV_AG10.EXE/1053/RCDATA/171/images/icons/key_space.gif",
+    "controls/key_enter.gif": "https://discmaster.textfiles.com/view/23146/chip-cd_2002_09.zip/09/Programy%20graficzne/ArtGem%201.3/rlv_ag13.exe/%7Bapp%7D/Help/images/icons/key_enter.gif",
+    "controls/key_up.gif": "https://discmaster.textfiles.com/view/23146/chip-cd_2002_09.zip/09/Programy%20graficzne/ArtGem%201.3/rlv_ag13.exe/%7Bapp%7D/Help/images/icons/KEY_UP.GIF",
+    "controls/key_down.gif": "https://discmaster.textfiles.com/view/23146/chip-cd_2002_09.zip/09/Programy%20graficzne/ArtGem%201.3/rlv_ag13.exe/%7Bapp%7D/Help/images/icons/KEY_DOWN.GIF",
+    "controls/mouse_0.png": "https://discmaster.textfiles.com/view/18153/ftp.srk.fer.hr.tar/ftp.srk.fer.hr/pub/.mandrake/mandrake71-inst.iso/Mandrake/RPMS/enlightenment-0.16.3-11mdk.i586.rpm/enlightenment-0.16.3.11mdk.cpio.gz/enlightenment-0.16.3.11mdk.cpio/usr/share/enlightenment/config/pix/mouse_0.png",
+    "controls/mouse_1.png": "https://discmaster.textfiles.com/view/18153/ftp.srk.fer.hr.tar/ftp.srk.fer.hr/pub/.mandrake/mandrake71-inst.iso/Mandrake/RPMS/enlightenment-0.16.3-11mdk.i586.rpm/enlightenment-0.16.3.11mdk.cpio.gz/enlightenment-0.16.3.11mdk.cpio/usr/share/enlightenment/config/pix/mouse_1.png",
+    "controls/mouse_2.png": "https://discmaster.textfiles.com/view/18153/ftp.srk.fer.hr.tar/ftp.srk.fer.hr/pub/.mandrake/mandrake71-inst.iso/Mandrake/RPMS/enlightenment-0.16.3-11mdk.i586.rpm/enlightenment-0.16.3.11mdk.cpio.gz/enlightenment-0.16.3.11mdk.cpio/usr/share/enlightenment/config/pix/mouse_2.png",
+
+    "font.ttf": "https://discmaster.textfiles.com/view/6472/Font%20Fun%20House%20(Wayzata%20Technology)%20(1992).iso/pc/pc/truetype/brassfie/brsfldbl/brbo____.ttf",
 
     "ocean.mp3": "http://discmaster.textfiles.com/view/24107/PC%20Gamer%20Disc%207.33%20(October%202003).ISO/Software/Demos/SimsOnline/TSO/Disc%202/Data2.cab/TSOClient/sounddata/ambience/loops/ocean_lp.xa",
     "hooked.mp3": "http://discmaster.textfiles.com/view/26950/3DW_149.iso/pc/DiscContents/resources/soundsnapsounds/Data/Soundsnap%20Dec%2011.zip/Soundsnap%20Dec%2011/Foley%20&%20FX09/Sound%20design%20multimedia%20accent%20notice%20chime%20mallets%2001_SFXBible_ss03657.wav",
@@ -48,5 +63,7 @@
     "pole.glb": "http://discmaster.textfiles.com/view/12759/Mania_09_CD2.iso/Gamezone1/Morrowind/Quests/FishingAcademy/fishing_academy.rar/Meshes/fishing_pole.NIF",
     "bobber.glb": "http://discmaster.textfiles.com/view/22495/XENIATGM131.iso/FragZone/Files/Bid%20For%20Power%201.1/bfp1_1_tgm.exe/bfp0.pk3/models/weaphits/sphere_2.md3",
     "exclamation.glb": "http://discmaster.textfiles.com/view/12771/10000.zip/AOLDLs/3D%20MODELS_%20Items%20&%20Miscellaneous/DXF_%203D%20DXF%20_New%20York%20Fonts_/3D%20New%20York%20Fonts!.sit/3D%20New%20York%20Fonts!/Punctuation%20folder/exclamation_Model.dxf",
-    "cd.glb": "http://discmaster.textfiles.com/view/10646/Capture%20the%20Power%20of%20the%20Internet.iso/mac/MacFiles/MultimediaTools/ImageAnimators/3dmoviemk.sit/3DMovieMaker/Data/CD.3df"
+    "cd.glb": "http://discmaster.textfiles.com/view/10646/Capture%20the%20Power%20of%20the%20Internet.iso/mac/MacFiles/MultimediaTools/ImageAnimators/3dmoviemk.sit/3DMovieMaker/Data/CD.3df",
+
+    "intro.txt": "https://discmaster.textfiles.com/view/155/The%20AGA%20Toolkit%20'97.iso/miscellaneous/help/wb/noahs.arc/intro"
 }
