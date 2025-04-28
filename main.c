@@ -11,12 +11,14 @@
 #define WAVE_SPAN 1024
 #define WAVE_TEX_TILES 8
 
-#define UNLOCK_ALL 1
-#define SHOW_FPS 1
+#define UNLOCK_ALL 0
+#define SHOW_FPS 0
 
 typedef enum { MODE_INTRO, MODE_FISHING, MODE_AWARD, MODE_GOFISH, MODE_JUKEBOX, MODE_CANVAS, MODE_PAINT } mode;
 
 typedef enum { STATE_POLE, STATE_WINDING, STATE_CASTING, STATE_CAST, STATE_HOOKED, STATE_REELING } state;
+
+typedef struct { char* file; char* display; } catch;
 
 bool randomEvent(float avgSeconds) {
   return GetRandomValue(1, (int)128*avgSeconds/GetFrameTime()) <= 128;
@@ -140,13 +142,13 @@ void randomizeUV(Model model) {
   }
 }
 
-void addAward(const char* caught[], int* caughtCount, int* selected, const char* award) {
-  int i = 0;
-  while (i < *caughtCount) if (strcmp(award, caught[i++]) == 0) break;
-  if (i == *caughtCount) {
-    caught[i] = award;
-    *selected = (*caughtCount)++;
+bool hasAward(catch caught[], int caughtCount, catch award) {
+  bool has = false;
+  for (int i = 0; i < caughtCount; i++) if (strcmp(award.file, caught[i].file) == 0) {
+      has = true;
+    break;
   }
+  return has;
 }
 
 void drawIntro(Font font, const char* intro) {
@@ -247,22 +249,61 @@ int main(void) {
   Rectangle paintStickerRect = { 0 };
   float paintStickerScale = 1;
 
-  const char* allStickers[] = {
-    "Batman1.png",
-    "Batman2.png",
-    "Godzilla_Breath.gif",
-    "Godzilla_Stare.gif",
-    "Indiana_Jones.jpg",
-    "Mothra.gif",
-    "Ripley.jpg",
-    "TMNT_Donatello.jpg",
-    "TMNT.jpg",
-    "TMNT_Leonardo.jpg",
-    "TMNT_Michaelangelo.jpg",
-    "TMNT_Raphael.jpg"
+  const catch allStickers[] = {
+    { "assets/stickers/TMNT_Michaelangelo.jpg", "mike_01_jpg_jpgcopy.jpg" },
+    { "assets/stickers/TMNT_Donatello.jpg", "don_01__jpg_jpgcopy.jpg" },
+    { "assets/stickers/TMNT_Leonardo.jpg", "leo_01__jpg_jpgcopy.jpg" },
+    { "assets/stickers/TMNT_Raphael.jpg", "raph_01__jpg_jpgcopy.jpg" },
+    { "assets/stickers/TMNT.jpg", "group_01__jpg_jpgcopy.jpg" },
+    { "assets/stickers/Godzilla_Breath.gif", "godzilla.gif" },
+    { "assets/stickers/Mothra.gif", "SS_03.gif" },
+    { "assets/stickers/Godzilla_Stare.gif", "godzilla.gif" },
+    { "assets/stickers/Ripley.jpg", "ripley.jpg" },
+    { "assets/stickers/Indiana_Jones.jpg", "lk_indiana_jones.jpg" },
+    { "assets/stickers/Batman.png", "pic b batman" },
+    { "assets/stickers/Stars_Background.jpg", "gold_stars_sw.jpg" },
+    { "assets/stickers/Hearts_Background.jpg", "hearts_sw.jpg" },
+    { "assets/stickers/Controlers_Background.jpg", "video_game_controlers_sw.jpg" },
+    { "assets/stickers/Gold_Star.gif", "star_gld.gif" },
+    { "assets/stickers/Heart.gif", "heart.gif" },
+    { "assets/stickers/Heart_Arrow.gif", "love heart.gif" },
+    { "assets/stickers/Al_Pacino.png", "al_pacino.jpg" },
+    { "assets/stickers/Hoth.png", "Hoth" },
+    { "assets/stickers/Leia.png", "leia.png" },
+    { "assets/stickers/Luke.jpg", "luke.jpg" },
+    { "assets/stickers/Han_Solo.png", "64x64x8.png" },
+    { "assets/stickers/Ewok.gif", "ewok.gif" },
+    { "assets/stickers/Yoda.gif", "yoda.gif" },
+    { "assets/stickers/Buzz_Aldrin.png", "Apollo 11, Aldrin" },
+    { "assets/stickers/Terminator.png", "terminator.png" },
+    { "assets/stickers/Sailor_Moon.png", "SAILOR MOON" },
+    { "assets/stickers/Fred_Flinstone.png", "Flinstones My Computer.ico" },
+    { "assets/stickers/Shaggy.png", "00049_scooby and shaggy.png" },
+    { "assets/stickers/Scooby.png", "00051_scoobyClosed.png" },
+    { "assets/stickers/Skeletor.jpg", "he-man wallpaper3.jpg" },
+    { "assets/stickers/He_Man.jpg", "he-man wallpaper2.jpg" },
+    { "assets/stickers/Thundercats.jpg", "tcwall.jpg" },
+    { "assets/stickers/Autobot.png", "Autobot.s.3200" },
+    { "assets/stickers/Alf.png", "ALF.3200" },
+    { "assets/stickers/Astronaut.png", "Astron.3200" },
+    { "assets/stickers/Frog_PC.png", "FrogPC.3200" },
+    { "assets/stickers/Pegasus.png", "whitehorse.3200" },
+    { "assets/stickers/Bugs_Bunny.gif", "bugsbun.gif" },
+    { "assets/stickers/Polar_Bear.gif", "polabear.gif" },
+    { "assets/stickers/Mouse.gif", "mouse.gif" },
+    { "assets/stickers/Hello_Kitty.jpg", "mailme.jpg" },
+    { "assets/stickers/Ghostbusters.png", "GHOSTBUSTERS.PNG" },
+    { "assets/stickers/Horses.png", "BUD.HORSES.png" },
+    { "assets/stickers/Ferrari_GTO.gif", "Ferrari(GTO)Color.gif" },
+    { "assets/stickers/Thought_Balloon.png", "Thought_Balloon_3.png" },
+    { "assets/stickers/Beholder.png", "00002_beholder.png" },
+    { "assets/stickers/Dragon.png", "PICT_269_GreenDragon.png" },
+    { "assets/stickers/Amiga_2000.png", "Amiga 2000" },
+    { "assets/stickers/Frame.png", "frame.png" },
+
   };
-  enum { allStickerCount = sizeof(allStickers)/sizeof(char*) };
-  const char* caughtStickers[allStickerCount] = { 0 };
+  enum { allStickerCount = sizeof(allStickers)/sizeof(catch) };
+  catch caughtStickers[allStickerCount] = { 0 };
   int caughtStickerCount = 0;
   int stickerSelected = 0;
   #if UNLOCK_ALL
@@ -344,12 +385,11 @@ int main(void) {
   bool showHelp = true;
   bool interactable = false;
 
-  const char* award;
-  int awardIndex;
+  catch award;
 
   const char* goFishFor;
 
-  const char** menuItems;
+  catch* menuItems;
   int menuItemCount = 0;
   int* menuSelected;
 
@@ -364,23 +404,50 @@ int main(void) {
   hookedSfx.looping = false;
 
   Music music = { 0 };
-  const char* allSongs[] = {
-    "Call_Me.mp3",
-    "He_Stopped_Loving_Her_Today.mp3",
-    "Master_of_Puppets.mp3",
-    "Super_Freak.mp3",
-    "Don't_You_Want_Me.mp3",
-    "I_Love_Rock_n_Roll.mp3",
-    "Miami_2017.mp3",
-    "Tainted_Love.mp3",
-    "Electric_Avenue.mp3",
-    "Karma_Chameleon.mp3",
-    "Push_It.mp3",
-    "You_Spin_Me_Round.mp3",
-    "Sailor_Moon.mp3",
+  const catch allSongs[] = {
+    { "assets/songs/He_Stopped_Loving_Her_Today.mp3", "He_Stopped_Loving_Her_Today.mus" },
+    { "assets/songs/I_Love_Rock_n_Roll.mp3", "i_love_rock_and_roll.mid" },
+    { "assets/songs/You_Spin_Me_Round.mp3", "You_Spin_me_Round.mus" },
+    { "assets/songs/Tainted_Love.mp3", "Tainted_Love.sid" },
+    { "assets/songs/Call_Me.mp3", "CALL_ME.MID" },
+    { "assets/songs/Electric_Avenue.mp3", "electric_avenue.mid" },
+    { "assets/songs/Master_of_Puppets.mp3", "Master_of_Puppets_A.mus" },
+    { "assets/songs/Don't_You_Want_Me.mp3", "don't_you_want_me" },
+    { "assets/songs/Push_It.mp3", "push_it.mid" },
+    { "assets/songs/Miami_2017.mp3", "Miami_2017.mus" },
+    { "assets/songs/Super_Freak.mp3", "super_freak.mid" },
+    { "assets/songs/Karma_Chameleon.mp3", "05 Karma Chameleon.mid" },
+    { "assets/songs/Sailor_Moon.mp3", "SMOON.mid" },
+    { "assets/songs/Tank.mp3", "Tank.mid" },
+    { "assets/songs/Space_Oddity.mp3", "06 Space oddity.mid" },
+    { "assets/songs/Canyon.mp3", "canyon.mid" },
+    { "assets/songs/Sweet_Home_Alabama.mp3", "Lynyrd Skynyrd - Sweet Home Alabama.mid" },
+    { "assets/songs/Another_Brick_In_The_Wall.mp3", "Another brick in the wall.mid" },
+    { "assets/songs/Ballroom_Blitz.mp3", "ballroom_blitz.mid" },
+    { "assets/songs/Carry_On_My_Wayward_Son.mp3", "carry_on_my_wayward_son.mid" },
+    { "assets/songs/Barracuda.mp3", "barracuda.mid" },
+    { "assets/songs/Paint_It_Black.mp3", "09 Paint it black.mid" },
+    { "assets/songs/Thunderstruck.mp3", "thunderstruck.mod" },
+    { "assets/songs/Hotel_California.mp3", "Eagles - Hotel California.mid" },
+    { "assets/songs/Dream_On.mp3", "dream_on.mid" },
+    { "assets/songs/Losing_My_Religion.mp3", "REM - Losing my religion.PDB" },
+    { "assets/songs/Don't_Stop_Believing.mp3", "PSID.Don't Stop Believing" },
+    { "assets/songs/Hold_The_Line.mp3", "03 Hold the line.mid" },
+    { "assets/songs/Hurts_So_Good.mp3", "hurts_so_good.mid" },
+    { "assets/songs/I'm_Still_Standing.mp3", "I'm Still Standing.mid" },
+    { "assets/songs/Take_On_Me.mp3", "dbm.take_on_me" },
+    { "assets/songs/Another_One_Bites_The_Dust.mp3", "Another_One_Bites_The_Dust.sid" },
+    { "assets/songs/Have_You_Ever_Seen_The_Rain.mp3", "09 Have you ever seen the rain.mid" },
+    { "assets/songs/We_Built_This_City.mp3", "We Built This City.mid" },
+    { "assets/songs/We're_Not_Gonna_Take_It.mp3", "Were_not_Gonna_Take_it.mus" },
+    { "assets/songs/Video_Killed_The_Radio_Star.mp3", "(the_buggles)video_killed_the_radio_star.mid" },
+    { "assets/songs/Godzilla.mp3", "godzilla.mid" },
+    { "assets/songs/House_Of_The_Rising_Sun.mp3", "house of the rising sun.mid" },
+    { "assets/songs/What's_Love_Got_To_Do_With_It.mp3", "06 What's love got to do with it.mid" },
+    { "assets/songs/Road_To_Nowhere.mp3", "Were_on_a_Road_to_Nowhere.mus" },
   };
-  enum { allSongCount = sizeof(allSongs)/sizeof(char*) };
-  const char* caughtSongs[allSongCount] = { 0 };
+  enum { allSongCount = sizeof(allSongs)/sizeof(catch) };
+  catch caughtSongs[allSongCount] = { 0 };
   int caughtSongCount = 0;
   int songSelected = 0;
   #if UNLOCK_ALL
@@ -449,16 +516,12 @@ int main(void) {
       if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
         if (mode == MODE_JUKEBOX) {
           UnloadMusicStream(music);
-          char file[100] = "assets/songs/";
-          strncat(file, menuItems[*menuSelected], 87);
-          music = LoadMusicStream(file);
+          music = LoadMusicStream(menuItems[*menuSelected].file);
           music.looping = false;
           PlayMusicStream(music);
           mode = MODE_FISHING;
         } else /* mode == MODE_CANVAS */ {
-          char file[100] = "assets/stickers/";
-          strncat(file, menuItems[*menuSelected], 84);
-          paintSticker = LoadImage(file);
+          paintSticker = LoadImage(menuItems[*menuSelected].file);
           ImageRotateCCW(&paintSticker);
           paintImgModified = ImageCopy(paintImg);
           EnableCursor();
@@ -624,7 +687,7 @@ int main(void) {
         RayCollision collision = GetRayCollisionModel((Ray){ bobberPos, (Vector3){ 0, -1, 0 } }, waves);
         bobberPos.y = collision.point.y;
 
-        if (state == STATE_CAST && randomEvent(15)) {
+        if (state == STATE_CAST && randomEvent(14)) {
           state = STATE_HOOKED;
           PlayMusicStream(hookedSfx);
         }
@@ -646,13 +709,21 @@ int main(void) {
         bobberPos = Vector3MoveTowards(bobberPos, bobberOnPolePos, 2);
         if (Vector3Equals(bobberPos, bobberOnPolePos)) {
           if (cdCaught) {
-            int rand = GetRandomValue(0, allSongCount+allStickerCount-1);
-            if (rand < allSongCount) {
-              award = allSongs[rand];
-              addAward(caughtSongs, &caughtSongCount, &songSelected, award);
-            } else {
-              award = allStickers[rand-allSongCount];
-              addAward(caughtStickers, &caughtStickerCount, &stickerSelected, award);
+            for (int i = 0; i < 10; i++) {
+              int rand = GetRandomValue(0, allSongCount+allStickerCount-1);
+              if (rand < allSongCount) {
+                award = allSongs[rand];
+                if (!hasAward(caughtSongs, caughtSongCount, award)) {
+                  caughtSongs[songSelected=caughtSongCount++] = award;
+                  break;
+                };
+              } else {
+                award = allStickers[rand-allSongCount];
+                if (!hasAward(caughtStickers, caughtStickerCount, award)) {
+                  caughtStickers[stickerSelected=caughtStickerCount++] = award;
+                  break;
+                }
+              }
             }
             mode = MODE_AWARD;
           }
@@ -707,10 +778,10 @@ int main(void) {
 
       switch (mode) {
       case MODE_AWARD:
-        DrawRectangle(450, 350, 700, 200, BEIGE);
+        DrawRectangle(300, 350, 1000, 200, BEIGE);
         drawTextCentered(font, "You Caught:", 370, 50, 5, BLACK);
-        drawTextCentered(font, award, 425, 50, 5, BLACK);
-        drawTextCentered(font, "Wow!", 480, 50, 5, BLACK);
+        drawTextCentered(font, award.display, 425, 50, 5, BLACK);
+        drawTextCentered(font, "Cool!", 480, 50, 5, BLACK);
         break;
 
       case MODE_GOFISH:
@@ -722,12 +793,12 @@ int main(void) {
 
       case MODE_JUKEBOX:
       case MODE_CANVAS:
-        DrawRectangle(400, 50, 800, 800, BEIGE);
-        int start = Clamp(*menuSelected-6, 0, Clamp(menuItemCount-13, 0, menuItemCount));
-        int end = Clamp(start+13, 0, menuItemCount);
+        DrawRectangle(300, 50, 1000, 800, BEIGE);
+        int start = Clamp(*menuSelected-7, 0, Clamp(menuItemCount-14, 0, menuItemCount));
+        int end = Clamp(start+14, 0, menuItemCount);
         for (int y = 60, i = start; i < end; y+=55, i++) {
           bool ellipses = i+1 == end && end != menuItemCount || i == start && start != 0;
-          const char* item = ellipses ? "..." : menuItems[i];
+          const char* item = ellipses ? "..." : menuItems[i].display;
           drawTextCentered(font, item, y, 50, 5, i == *menuSelected ? DARKPURPLE : BLACK);
         }
         break;
@@ -753,7 +824,7 @@ int main(void) {
         case MODE_GOFISH:
           DrawTextureEx(keySpace, (Vector2){ 1600-10-30-32-32+6, 10+4  }, 0, 2, WHITE);
           DrawTextureEx(mouse1  , (Vector2){ 1600-10-30        , 10    }, 0, 2, WHITE);
-          DrawTextureEx(keyH    , (Vector2){ 1600-10-28        , 10+52 }, 0, 2, WHITE);
+          DrawTextureEx(keyH    , (Vector2){ 1600-10-28        , 10+42 }, 0, 2, WHITE);
           break;
 
         case MODE_JUKEBOX:
