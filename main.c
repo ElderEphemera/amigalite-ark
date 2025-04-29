@@ -481,6 +481,8 @@ int main(void) {
 
     if (IsKeyPressed(KEY_H)) showHelp = !showHelp;
 
+    if (mode != MODE_PAINT && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) DisableCursor();
+
     switch (mode) {
 
     case MODE_INTRO:
